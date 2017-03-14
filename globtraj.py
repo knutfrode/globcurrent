@@ -7,10 +7,10 @@ from opendrift.models.oceandrift3D import OceanDrift3D
 from opendrift.readers import reader_ROMS_native
 from opendrift.readers import reader_netCDF_CF_generic
 
-# Forcing data
-waves = '/lustre/storeA/project/fou/om/retrospect/retrospect_data/waves/ECwave_%Y.nc'
-current = 'http://thredds.met.no/thredds/dodsC/retrospect/qck/control_qck_%Y%m.ncml'
-wind = '/lustre/storeA/project/fou/om/retrospect/retrospect_data/Inputs/Forcing/ECMWF_forecast/ocean_frc_%Y.nc'
+forcing = 'norshelf'
+forcing = 'globcur-total'
+forcing = 'globcur-total15m'
+
 
 # Read drifter data
 f = '/disk1/data/drifter/all_trajectories_wind_unfiltered.dat'
@@ -36,27 +36,39 @@ for d in data:
     if start_time < datetime(2011, 5, 1):
         print 'Before Retrospect start: %s' % time[0]
         continue
-    filename = typ + start_time.strftime('_%Y%m%d%H%M_') + str(d) + '.png'
+    filename = typ + '_' + forcing + start_time.strftime('_%Y%m%d%H%M_') + str(d) + '.png'
 
     lon = data[d]['lon']
     lat = data[d]['lat']
 
     o = OceanDrift3D()
-    readerURL = time[0].strftime(current)
-    readerURLnext = (time[0] + timedelta(days=30)).strftime(current)
-    reader = reader_ROMS_native.Reader(readerURL)
-    readerNext = reader_ROMS_native.Reader(readerURLnext)
-    ECfile = time[0].strftime(wind)
-    ECMWF_reader = reader_netCDF_CF_generic.Reader(ECfile)
-    reader_waves = reader_netCDF_CF_generic.Reader(time[0].strftime(waves))
-    reader_waves.interpolation = 'linearND'  # To interpolate towards coast
-    o.add_reader([reader, readerNext, ECMWF_reader, reader_waves])
+    # Forcing data
+    if forcing == 'norshelf':
+        wind = '/lustre/storeA/project/fou/om/retrospect/retrospect_data/Inputs/Forcing/ECMWF_forecast/ocean_frc_%Y.nc'
+        # NB: waves only for 5 months of 2011
+        waves = '/lustre/storeA/project/fou/om/retrospect/retrospect_data/waves/ECwave_%Y.nc'
+        current = 'http://thredds.met.no/thredds/dodsC/retrospect/qck/control_qck_%Y%m.ncml'
+        readerURL = time[0].strftime(current)
+        readerURLnext = (time[0] + timedelta(days=30)).strftime(current)
+        reader = reader_ROMS_native.Reader(readerURL)
+        readerNext = reader_ROMS_native.Reader(readerURLnext)
+        ECfile = time[0].strftime(wind)
+        ECMWF_reader = reader_netCDF_CF_generic.Reader(ECfile)
+        reader_waves = reader_netCDF_CF_generic.Reader(time[0].strftime(waves))
+        reader_waves.interpolation = 'linearND'  # To interpolate towards coast
+        readers = [reader, readerNext, ECMWF_reader, reader_waves]
+        o.add_reader(readers)
+    elif forcing == 'globcur-total':
+        current = 'http://tds0.ifremer.fr/thredds/dodsC/CLS-L4-CUREUL_HS-ALT_SUM-V02.0_FULL_TIME_SERIE'
+        o.add_readers_from_list([current])
+    elif forcing == 'globcur-total15m':
+        current = 'http://tds0.ifremer.fr/thredds/dodsC/CLS-L4-CUREUL_15M-ALT_SUM-V02.0_FULL_TIME_SERIE'
+        o.add_readers_from_list([current])
 
-    print reader, readerNext, ECMWF_reader, reader_waves
     o.fallback_values['land_binary_mask'] = 0  # Run without landmask
 
     if typ == 'iSphere':
-        wind_drift_factor = 0.03
+        wind_drift_factor = 0.02
         z = 0.0
     elif typ == 'CODE':
         wind_drift_factor = 0
