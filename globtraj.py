@@ -14,7 +14,7 @@ replot = False
 with_stokes = False
 
 forcing = 'norshelf'
-forcing = 'globcur-total'
+forcing = 'globcur'
 #forcing = 'globcur-total15m'
 
 # Read drifter data
@@ -99,14 +99,15 @@ for with_stokes in [True, False]:
                 readerNext = reader_ROMS_native.Reader(readerURLnext)
                 readers = [readerNext, reader]
                 o.add_reader(readers)
-            elif forcing == 'globcur-total':
+            elif forcing == 'globcur':
                 current = 'http://tds0.ifremer.fr/thredds/dodsC/CLS-L4-CUREUL_HS-ALT_SUM-V02.0_FULL_TIME_SERIE'
                 o.add_readers_from_list([current])
-            elif forcing == 'globcur-total15m':
-                current = 'http://tds0.ifremer.fr/thredds/dodsC/CLS-L4-CUREUL_15M-ALT_SUM-V02.0_FULL_TIME_SERIE'
+            else:
+                unknown_current
+            #elif forcing == 'globcur-total15m':
+            #    current = 'http://tds0.ifremer.fr/thredds/dodsC/CLS-L4-CUREUL_15M-ALT_SUM-V02.0_FULL_TIME_SERIE'
 
             # Adding readers
-            o.add_readers_from_list([current])
             if with_stokes is True:
                 stokes = time[0].strftime('stokes_year/stokes_%Y.nc')
                 o.add_readers_from_list([stokes])
