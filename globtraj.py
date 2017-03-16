@@ -55,8 +55,9 @@ for with_stokes in [True, False]:
                             start_time.strftime('_%Y%m%d%H%M_') + str(d)
 
             print filename + '.nc'
-            if len(glob.glob(filename + '.nc')) >= 0:
+            if len(glob.glob(filename + '.nc')) > 0:
                 print 'NetCDF output exists, skipping'
+                continue
 
             lon = data[d]['lon']
             lat = data[d]['lat']
