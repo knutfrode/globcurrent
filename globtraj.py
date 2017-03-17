@@ -24,7 +24,7 @@ print data.keys()
 print data[12].keys()
 
 for with_stokes in [True, False]:
-    for forcing in ['norshelf', 'globcur']:
+    for forcing in ['globcur', 'norshelf']:
         # Loop through drifters
         for d in data:
             typ = data[d]['type']
@@ -81,7 +81,7 @@ for with_stokes in [True, False]:
 
             o = OceanDrift3D()
             o.set_config('drift:stokes_drift', with_stokes)
-            o.max_speed = 7  # Due to future seeding!
+            o.max_speed = 5  # Due to future seeding!
 
             del o.fallback_values['x_sea_water_velocity']
             del o.fallback_values['y_sea_water_velocity']
@@ -118,6 +118,7 @@ for with_stokes in [True, False]:
             # Interpolation method
             for re in o.readers:
                 o.readers[re].interpolation = 'linearND'
+                o.readers[re].buffer = np.maximum(30, o.readers[re].buffer)
 
             o.fallback_values['land_binary_mask'] = 0  # Run without landmask
 
