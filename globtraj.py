@@ -118,7 +118,7 @@ for with_stokes in [True, False]:
             # Interpolation method
             for re in o.readers:
                 o.readers[re].interpolation = 'linearND'
-                o.readers[re].buffer = np.maximum(30, o.readers[re].buffer)
+                o.readers[re].buffer = np.maximum(15, o.readers[re].buffer)
 
             o.fallback_values['land_binary_mask'] = 0  # Run without landmask
 
@@ -147,13 +147,13 @@ for with_stokes in [True, False]:
                 o.run(end_time=time[-1] + timedelta(hours=48),
                       outfile=filename + '.nc', stop_on_error=False)
             print o
-            if typ == 'CODE':
-                o.plot(trajectory_dict=trajectory_dict, buffer=.2,
-                   filename=filename + '.png')
-            elif typ == 'iSphere':
-                o.plot(trajectory_dict=trajectory_dict, buffer=.2,
-                   linecolor='wind_drift_factor',
-                   filename=filename + '.png')
+            #if typ == 'CODE':
+            #    o.plot(trajectory_dict=trajectory_dict, buffer=.2,
+            #       filename=filename + '.png')
+            #elif typ == 'iSphere':
+            #    o.plot(trajectory_dict=trajectory_dict, buffer=.2,
+            #       linecolor='wind_drift_factor',
+            #       filename=filename + '.png')
             #reader.buffer = 2
             #o.animation(background=['x_sea_water_velocity',
             #                        'y_sea_water_velocity'],
