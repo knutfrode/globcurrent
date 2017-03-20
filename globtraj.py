@@ -10,12 +10,7 @@ from opendrift.models.oceandrift3D import OceanDrift3D
 from opendrift.readers import reader_ROMS_native
 from opendrift.readers import reader_netCDF_CF_generic
 
-replot = False
-with_stokes = False
-
-forcing = 'norshelf'
-forcing = 'globcur'
-#forcing = 'globcur-total15m'
+replot = True
 
 # Read drifter data
 f = '/disk1/data/drifter/all_trajectories_wind_unfiltered.dat'
@@ -57,7 +52,7 @@ for with_stokes in [True, False]:
             print filename + '.nc'
             if len(glob.glob(filename + '.nc')) > 0:
                 print 'NetCDF output exists, skipping'
-                continue
+                #continue
 
             lon = data[d]['lon']
             lat = data[d]['lat']
@@ -147,13 +142,13 @@ for with_stokes in [True, False]:
                 o.run(end_time=time[-1] + timedelta(hours=48),
                       outfile=filename + '.nc', stop_on_error=False)
             print o
-            #if typ == 'CODE':
-            #    o.plot(trajectory_dict=trajectory_dict, buffer=.2,
-            #       filename=filename + '.png')
-            #elif typ == 'iSphere':
-            #    o.plot(trajectory_dict=trajectory_dict, buffer=.2,
-            #       linecolor='wind_drift_factor',
-            #       filename=filename + '.png')
+            if typ == 'CODE':
+                o.plot(trajectory_dict=trajectory_dict, buffer=.2,
+                   filename=filename + '.png')
+            elif typ == 'iSphere':
+                o.plot(trajectory_dict=trajectory_dict, buffer=.2,
+                   linecolor='wind_drift_factor',
+                   filename=filename + '.png')
             #reader.buffer = 2
             #o.animation(background=['x_sea_water_velocity',
             #                        'y_sea_water_velocity'],
