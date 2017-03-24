@@ -11,8 +11,7 @@ from opendrift.readers import reader_ROMS_native
 from opendrift.readers import reader_netCDF_CF_generic
 
 geod = pyproj.Geod(ellps='WGS84')
-
-recalc = False
+recalc = True
 
 alldata = {'CODE': {'norshelf': {'stokes': None, 'nostokes': None},
                     'globcur':  {'stokes': None, 'nostokes': None}},
@@ -104,28 +103,32 @@ if recalc is True:
 
                 if typ == 'iSphere':
                     wdfs = [0, .1, .2, .3]
-                else:
+                elif typ == 'CODE':
                     wdfs = [0]
+                else:
+                    ostepop
                 numwdfs = len(wdfs)
-                num_elements = o.history['lon'].shape[0]
-                traj_lon = np.zeros((48, num_elements, numwdfs))
-                traj_lat = np.zeros((48, num_elements, numwdfs))
-                dr_lon = np.zeros((48, num_elements, numwdfs))
-                dr_lat = np.zeros((48, num_elements, numwdfs))
-                for e in range(num_elements):
+                num_total = o.history['lon'].shape[0]
+                num_segments = num_total/len(wdfs)
+                traj_lon = np.zeros((48, num_segments, numwdfs)) # simul
+                traj_lat = np.zeros((48, num_segments, numwdfs))
+                dr_lon = np.zeros((48, num_segments, numwdfs)) # drifter
+                dr_lat = np.zeros((48, num_segments, numwdfs))
+                for e in range(num_total):
                     tlon = o.history['lon'][e, :]
+                    tlat = o.history['lat'][e, :]
                     if np.sum(~tlon.mask) != 49:
                         continue
+                    e_ind = int(np.floor(e/len(wdfs)))
                     wdf = o.history['wind_drift_factor'][e,~tlon.mask][0]
-                    wdf = int(wdf*10)
-                    print wdf
-                    tlon = o.history['lon'][e, :]
-                    traj_lon[:,e,wdf] = tlon[~tlon.mask][0:48]
-                    tlat = o.history['lat'][e, :]
-                    traj_lat[:,e,wdf] = tlat[~tlat.mask][0:48]
-                    dr_lon[:,e,wdf] = lon[~tlat.mask][0:48]
-                    dr_lat[:,e,wdf] = lat[~tlon.mask][0:48]
-                ind = np.where(dr_lon[0,:] != 0)[0]
+                    wdf = int(np.round(wdf*100.0))
+                    # Simulation
+                    traj_lon[:,e_ind,wdf] = tlon[~tlon.mask][0:48]
+                    traj_lat[:,e_ind,wdf] = tlat[~tlat.mask][0:48]
+                    # Drifter
+                    dr_lon[:,e_ind,wdf] = lon[~tlon.mask][0:48]
+                    dr_lat[:,e_ind,wdf] = lat[~tlat.mask][0:48]
+                ind = np.where(traj_lon[0,:,:] != 0)[0]
                 traj_lon = traj_lon[:,ind,:]
                 traj_lat = traj_lat[:,ind,:]
                 dr_lon = dr_lon[:,ind,:]
@@ -150,29 +153,40 @@ if recalc is True:
 else:
     alldata = pickle.load(open('alldata.dat'))
 
-#for typ in ['iSphere']:
-#    for forcing in ['globcur', 'norshelf']:
-#        for hasstokes in ['stokes', 'nostokes']:
-#            print alldata[typ][forcing][hasstokes].shape
-#            print alldata[typ][forcing][hasstokes][0,0,0]
-#            print alldata[typ][forcing][hasstokes][0,0,1]
-#            print alldata[typ][forcing][hasstokes][0,0,2]
-#            stop
-#            for i in range(4):
-#                wdf = i/10.
-#                print i
-#                plt.plot(np.mean(alldata[typ][forcing][hasstokes][:,:,i], 1),
-#                     label='%s  %s (%s)' % (forcing, hasstokes, wdf))
-#    plt.title('%s' % (typ))
-#    plt.legend(loc='best')
-#    plt.show()
-#stop
-
 forleg = {'globcur': 'GlobCurrent total_hs',
           'norshelf': 'NorShelf ocean model'}
 stokleg = {'stokes': 'with Stokes drift',
            'nostokes': 'no Stokes drift'}
+for typ in ['iSphere']:
+    for forcing in ['globcur', 'norshelf']:
+        plt.figure(figsize=(10, 6.))
+    #for forcing in ['globcur']:
+        #for hasstokes in ['stokes', 'nostokes']:
+        for hasstokes in ['stokes']:
+            print alldata[typ][forcing][hasstokes].shape
+            print alldata[typ][forcing][hasstokes][0:13,0:13,0]
+            print alldata[typ][forcing][hasstokes][0:13,0:13,1]
+            print alldata[typ][forcing][hasstokes][0:13,0:13,2]
+            print alldata[typ][forcing][hasstokes][0:13,0:13,3]
+            for i in range(4):
+                wdf = i/100.
+                print i
+                plt.plot(np.mean(alldata[typ][forcing][hasstokes][:,:,i], 1)/1000,
+                     label='Wind drift factor %s' % (wdf))
+        plt.title('%s, %s' % (typ, forleg[forcing]))
+        plt.xlabel('Time [hours]')
+        plt.ylabel('Separation forecast - drifter [km]')
+        plt.xlim([0, 48])
+        plt.legend(loc='best')
+        plt.savefig('winddrift_%s.png' % (forcing))
+        plt.close()
+        #plt.show()
+
 for typ in ['iSphere', 'CODE']:
+    if typ == 'iSphere':
+        wdf = 2  # 2%
+    else:
+        wdf = 0  # 0%
     plt.figure(figsize=(10, 6.))
     for forcing in ['globcur', 'norshelf']:
         if forcing == 'globcur':
@@ -184,7 +198,7 @@ for typ in ['iSphere', 'CODE']:
                 lt = ltb + '.'
             else:
                 lt = ltb
-            plt.plot(np.mean(alldata[typ][forcing][hasstokes][:,:,0], 1)/1000,
+            plt.plot(np.mean(alldata[typ][forcing][hasstokes][:,:,wdf], 1)/1000,
                      lt,
                      label='%s - %s' % (forleg[forcing],
                                        stokleg[hasstokes]),
